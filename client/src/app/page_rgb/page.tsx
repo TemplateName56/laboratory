@@ -12,10 +12,18 @@ import "ace-builds/src-noconflict/theme-monokai";
 import "ace-builds/src-noconflict/ext-language_tools";
 
 export default function () {
-  const codeRGB = `// button pins
-int btn[] = {4, 3, 2};
+  const codeRGB = `// C++ code
+//
+#include <LiquidCrystal_I2C.h>
+
+// button pins
+int btn[] = {6, 5, 4, 3, 2};
 // RGB pins
-int rgb[] = {11, 10, 9};
+int rgb[] = {10, 8, 9};
+
+
+//initialize lcd
+LiquidCrystal_I2C lcd(32,16,2);
   
 // connect elements to pins
 void setup()
@@ -27,6 +35,12 @@ void setup()
   }
 
   set_color( 0, 0, 0 );
+  lcd.init();     
+  lcd.backlight();
+  
+
+  lcd.setCursor(2,0);
+  lcd.print("Press a button");
 }
 
 void loop()
@@ -34,17 +48,43 @@ void loop()
   // RED
   if( digitalRead( btn[0] ) == LOW )
   {
+    lcd.clear();
+    lcd.setCursor(0,0);
+  	lcd.print("Red");
     set_color( 255, 0, 0 );
+    Serial.println(btn[0]);
   }
   // GREEN
   else if( digitalRead( btn[1] ) == LOW )
   {
+    lcd.clear();
+    lcd.setCursor(0,0);
+  	lcd.print("Green");
     set_color( 0, 255, 0 );
   }
   // BLUE
   else if( digitalRead( btn[2] ) == LOW )
   {
+    lcd.clear();
+    lcd.setCursor(0,0);
+  	lcd.print("Blue");
     set_color( 0, 0, 255 );
+  }
+  // Yellow
+  else if( digitalRead( btn[3] ) == LOW )
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+  	lcd.print("Yellow");
+    set_color( 255, 255, 0 );
+  }
+  // Magenta
+  else if( digitalRead( btn[4] ) == LOW )
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+  	lcd.print("Magenta");
+    set_color( 255, 0, 255 );
   }
 }
   
@@ -57,15 +97,17 @@ void set_color( int red, int green, int blue )
 }`
 
   const [leds, setLeds] = useState([
-    { id: 0, pin: 11, value: false, color: 'red' },
-    { id: 1, pin: 10, value: false, color: 'green' },
+    { id: 0, pin: 10, value: false, color: 'red' },
+    { id: 1, pin: 8, value: false, color: 'green' },
     { id: 2, pin: 9, value: false, color: 'blue' },
   ]);
 
   const [btns, setBtns] = useState([
-    { id: 3, pin: 2, pressed: false, color: 'red' },
-    { id: 4, pin: 3, pressed: false, color: 'green' },
-    { id: 5, pin: 4, pressed: false, color: 'blue' }
+    { id: 6, pin: 6, pressed: false, color: 'red' },
+    { id: 5, pin: 5, pressed: false, color: 'green' },
+    { id: 4, pin: 4, pressed: false, color: 'blue' },
+    { id: 3, pin: 3, pressed: false, color: 'yellow' },
+    { id: 2, pin: 2, pressed: false, color: 'magenta' }
   ]);
 
   const [code, setCode] = useState(codeRGB);
@@ -74,6 +116,7 @@ void set_color( int red, int green, int blue )
   const [buildResult, setBuildResult] = useState('');
   const [hex, setHex] = useState(null);
   const [sketchName, setSketchName] = useState('sketch');
+  const [lcdText, setLcdText] = useState('Press button');
 
   runner.portB.addListener((value) => {
     console.log('PortB');
@@ -110,6 +153,7 @@ void set_color( int red, int green, int blue )
   };
 
   const pressBtn = (color: string) => {
+    setLcdText(color.charAt(0).toUpperCase() + color.slice(1));
     switch (color) {
       case btns[0].color:
         setLeds([
@@ -125,15 +169,29 @@ void set_color( int red, int green, int blue )
           { ...leds[2], value: false }
         ]);
           break;
-        case btns[2].color:
-          setLeds([
-            { ...leds[0], value: false },
-            { ...leds[1], value: false },
-            { ...leds[2], value: true }
-          ]);
-          break;
-        default:
-          break;
+      case btns[2].color:
+        setLeds([
+          { ...leds[0], value: false },
+          { ...leds[1], value: false },
+          { ...leds[2], value: true }
+        ]);
+        break;
+      case btns[3].color:
+        setLeds([
+          { ...leds[0], value: true },
+          { ...leds[1], value: true },
+          { ...leds[2], value: false }
+        ]);
+        break;
+      case btns[4].color:
+        setLeds([
+          { ...leds[0], value: true },
+          { ...leds[1], value: false },
+          { ...leds[2], value: true }
+        ]);
+        break;
+      default:
+        break;
     }
   }
 
@@ -204,6 +262,11 @@ void set_color( int red, int green, int blue )
                 label={`Make it ${btn.color.toUpperCase()}`} >
               </wokwi-pushbutton>
             ))}
+          </div>
+          <div>
+            <wokwi-lcd1602 pins="i2c" text={lcdText}>
+
+            </wokwi-lcd1602>
           </div>
 
         </div>

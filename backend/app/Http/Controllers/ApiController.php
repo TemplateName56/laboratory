@@ -19,6 +19,7 @@ class ApiController extends Controller
         $scriptPath = base_path('build.sh');
         Storage::put('sketch/sketch.ino', $code);
         //TODO MOVE IT TO DOCKEFILE
+        exec('arduino-cli lib install "LiquidCrystal I2C"');
         exec("/usr/local/bin/arduino-cli core install arduino:avr");
         exec("bash $scriptPath 2>&1", $output, $returnCode);
 
