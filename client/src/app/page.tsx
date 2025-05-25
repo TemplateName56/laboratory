@@ -7,7 +7,10 @@ function Home() {
         <Link href="/">Home</Link>
       </li>
       <li>
-        <Link href="/page_rgb">RGB-LED color changed by pressing buttons and LCD</Link>
+        <Link href="/page_rgb">Експеремент № 1</Link>
+      </li>
+      <li>
+        <Link href="/page_sam_rob">Експеремент № 2</Link>
       </li>
     </ul>
   )

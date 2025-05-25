@@ -17,76 +17,57 @@ export default function () {
 //
 #include <LiquidCrystal_I2C.h>
 
-// button pins
-int btn[] = {6, 5, 4, 3, 2};
 // RGB pins
 int rgb[] = {10, 8, 9};
 
-//initialize lcd
+int smokeA0 = A0;
+
+const int MIN_SENSOR_VALUE = 85;
+const int MAX_SENSOR_VALUE = 385;
+
+// Ініціалізація екрану
 LiquidCrystal_I2C lcd(32,16,2);
   
-// connect elements to pins
+// Підключення пінів
 void setup()
 {
-  for(int i = 0; i < 3; i++)
+  pinMode(smokeA0, INPUT);
+  for(int i = 0; i < 3; i++ )
   {
-    pinMode(rgb[i], OUTPUT);
-  }
-  for(int i = 0; i < 5; i++)
-  {
-    pinMode(btn[i], INPUT_PULLUP);
+    pinMode(rgb[i], OUTPUT );
   }
 
   set_color(0, 0, 0);
   
   lcd.init();     
   lcd.backlight();
-
-  lcd.setCursor(2,0);
-  lcd.print("Press a button");
+  
+  lcd.setCursor(0,0);
+  lcd.print("Gas level:");
 }
 
 void loop()
 {
-  // RED
-  if(digitalRead(btn[0]) == LOW)
+  int analogSensor = analogRead(smokeA0);
+  // Перетворюємо ренж з 85-385 у 0-100
+  int gas = map(analogSensor, MIN_SENSOR_VALUE, MAX_SENSOR_VALUE, 0, 100);
+  if (gas < 26)
   {
-    lcd.clear();
-    lcd.setCursor(0,0);
-  	lcd.print("Red");
-    set_color(255, 0, 0);
-  }
-  // GREEN
-  else if(digitalRead(btn[1]) == LOW)
-  {
-    lcd.clear();
-    lcd.setCursor(0,0);
-  	lcd.print("Green");
+    lcd.setCursor(1,1);
+    lcd.print(gas);
     set_color(0, 255, 0);
   }
-  // BLUE
-  else if( digitalRead( btn[2] ) == LOW )
+  else if (gas >= 26 && gas < 76)
   {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-  	lcd.print("Blue");
-    set_color(0, 0, 255);
-  }
-  // Yellow
-  else if(digitalRead( btn[3] ) == LOW)
-  {
-    lcd.clear();
-    lcd.setCursor(0,0);
-  	lcd.print("Yellow");
+    lcd.setCursor(1,1);
+    lcd.print(gas);
     set_color(255, 255, 0);
   }
-  // Magenta
-  else if(digitalRead( btn[4] ) == LOW)
+  else 
   {
-    lcd.clear();
-    lcd.setCursor(0,0);
-  	lcd.print("Magenta");
-    set_color(255, 0, 255);
+    lcd.setCursor(1,1);
+    lcd.print(gas);
+    set_color(255, 0, 0);
   }
 }
   
@@ -104,21 +85,14 @@ void set_color(int red, int green, int blue)
     { id: 2, pin: 9, value: false, color: 'blue' },
   ]);
 
-  const [btns, setBtns] = useState([
-    { id: 6, pin: 6, pressed: false, color: 'red' },
-    { id: 5, pin: 5, pressed: false, color: 'green' },
-    { id: 4, pin: 4, pressed: false, color: 'blue' },
-    { id: 3, pin: 3, pressed: false, color: 'yellow' },
-    { id: 2, pin: 2, pressed: false, color: 'magenta' }
-  ]);
-
   const [code, setCode] = useState(codeRGB);
   const [runner, setRunner] = useState<AVRRunner>(new AVRRunner());
   const [status, setStatus] = useState('');
   const [buildResult, setBuildResult] = useState('');
   const [hex, setHex] = useState(null);
   const [sketchName, setSketchName] = useState('sketch');
-  const [lcdText, setLcdText] = useState('Press button');
+  const [lcdText, setLcdText] = useState('Gas level: 0');
+  const [gasLevel, setGasLevel] = useState(0.0)
 
   runner.portB.addListener((value) => {
     console.log('PortB');
@@ -154,46 +128,31 @@ void set_color(int red, int green, int blue)
     }
   };
 
-  const pressBtn = (color: string) => {
-    setLcdText(color.charAt(0).toUpperCase() + color.slice(1));
-    switch (color) {
-      case btns[0].color:
-        setLeds([
-          { ...leds[0], value: true },
-          { ...leds[1], value: false },
-          { ...leds[2], value: false }
-        ]);
-        break;
-      case btns[1].color:
-        setLeds([
+  const handleGasChange = (e) => {
+    const val = parseFloat(e.target.value);
+    setGasLevel(val);
+    var gasSensorValue = Math.round(gasLevel * 100)
+    if (gasSensorValue < 26) {
+      setLcdText("Gas level:\n" + gasSensorValue);
+      setLeds([
           { ...leds[0], value: false },
           { ...leds[1], value: true },
           { ...leds[2], value: false }
         ]);
-          break;
-      case btns[2].color:
-        setLeds([
-          { ...leds[0], value: false },
-          { ...leds[1], value: false },
-          { ...leds[2], value: true }
-        ]);
-        break;
-      case btns[3].color:
-        setLeds([
+    } else if (gasSensorValue >= 26 && gasSensorValue < 76) {
+      setLcdText("Gas level:\n" + gasSensorValue);
+      setLeds([
           { ...leds[0], value: true },
           { ...leds[1], value: true },
           { ...leds[2], value: false }
         ]);
-        break;
-      case btns[4].color:
-        setLeds([
+    } else {
+      setLcdText("Gas level:\n" + gasSensorValue);
+      setLeds([
           { ...leds[0], value: true },
           { ...leds[1], value: false },
-          { ...leds[2], value: true }
+          { ...leds[2], value: false }
         ]);
-        break;
-      default:
-        break;
     }
   }
 
@@ -259,15 +218,26 @@ void set_color(int red, int green, int blue)
           </div>
 
           <div>
-            {btns.map((btn) => (
-              <wokwi-pushbutton
-                key={btn.id}
-                pin={btn.pin}
-                color={btn.color}
-                onClick={() => pressBtn(btn.color)}
-                label={`Make it ${btn.color.toUpperCase()}`} >
-              </wokwi-pushbutton>
-            ))}
+            <wokwi-gas-sensor>
+
+            </wokwi-gas-sensor>
+          </div>
+          <div>
+            <input
+              id="gasRange"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={gasLevel}
+              onChange={handleGasChange}
+              style={{ width: '100%', marginTop: '5px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#666' }}>
+              <span>Safe (0-25%)</span>
+              <span>Warning (26-75%)</span>
+              <span>Danger (76-100%)</span>
+            </div>
           </div>
           <div>
             <wokwi-lcd1602 pins="i2c" text={lcdText}>
